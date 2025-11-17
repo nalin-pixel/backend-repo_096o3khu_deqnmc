@@ -1,48 +1,56 @@
 """
-Database Schemas
+Database Schemas for Teeth Whitening Store
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model below maps to a MongoDB collection. The collection name is the
+lowercased class name (e.g., Order -> "order").
 """
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
-
-class User(BaseModel):
+class Whiteningproduct(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
-
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Collection: "whiteningproduct"
+    Represents a teeth whitening product (e.g., strips, kits).
     """
     title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    subtitle: Optional[str] = Field(None, description="Short tagline or subheading")
+    description: Optional[str] = Field(None, description="Full product description")
+    price: float = Field(..., ge=0, description="Price in your store currency")
+    compare_at_price: Optional[float] = Field(None, ge=0, description="Strikethrough price for discount display")
+    image: Optional[str] = Field(None, description="Primary image URL")
+    gallery: Optional[List[str]] = Field(default_factory=list, description="Additional image URLs")
+    badges: Optional[List[str]] = Field(default_factory=list, description="Small selling point badges")
+    in_stock: bool = Field(True, description="Whether product is available")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class OrderItem(BaseModel):
+    product_id: str = Field(..., description="ID of the product document")
+    title: str
+    unit_price: float = Field(..., ge=0)
+    quantity: int = Field(1, ge=1)
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Order(BaseModel):
+    """
+    Collection: "order"
+    Stores a placed order from checkout.
+    """
+    email: EmailStr
+    full_name: str
+    address_line1: str
+    address_line2: Optional[str] = None
+    city: str
+    region: Optional[str] = None
+    postal_code: str
+    country: str
+    items: List[OrderItem]
+    subtotal: float = Field(..., ge=0)
+    shipping: float = Field(0, ge=0)
+    total: float = Field(..., ge=0)
+    marketing_opt_in: bool = False
+
+class Subscriber(BaseModel):
+    """
+    Collection: "subscriber"
+    For email capture (newsletter/discounts).
+    """
+    email: EmailStr
+    source: Optional[str] = Field(None, description="Where the signup happened (e.g. hero, footer)")
